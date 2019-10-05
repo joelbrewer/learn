@@ -28,6 +28,7 @@
            :accept "application/json"
            :content-type "application/json"
            :additional-headers `(("Authorization" . ,(make-auth-header token))))))))
+
 (defun refresh-token ()
   (let* ((rtoken (sb-unix::posix-getenv "QB_REFRESH_TOKEN"))
         (route "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"))
@@ -42,6 +43,14 @@
            :additional-headers `(("Authorization" . ,(make-basic-auth-header)))))))
 (defun get-profit-and-loss ()
   (make-qb-request (concatenate 'string *company-id* "/reports/ProfitAndLoss?start_date=2019-09-01&end_date=2019-09-30&minorversion=12")))
+
 (defun request-as-json (request)
-  (json:decode-json request)
-)
+  (with-input-from-string
+        (s (funcall request))
+          (json:decode-json s)))
+
+(defun start ()
+  (let* ((token-request (request-as-json #'refresh-token))
+; First, we need to grab a token, so that we can make API requests to QuickBooks
+         (token (cdr (assoc :access--token token-request))))
+    (print token)))
