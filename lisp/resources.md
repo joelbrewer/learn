@@ -1,0 +1,1 @@
+- [Lisp macros explained](http://www.defmacro.org/ramblings/lisp.html)
