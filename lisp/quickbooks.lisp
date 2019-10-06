@@ -19,15 +19,13 @@
   final-string
   )
 )
-(defun make-qb-request (route)
-  (let ((token (sb-unix::posix-getenv "QB_TOKEN"))
-        (refresh-token (sb-unix::posix-getenv "QB_REFRESH_TOKEN"))
-    (map 'string 'code-char
-         (drakma:http-request
-           (concatenate 'string *api* route)
-           :accept "application/json"
-           :content-type "application/json"
-           :additional-headers `(("Authorization" . ,(make-auth-header token))))))))
+(defun make-qb-request (route token)
+  (map 'string 'code-char
+        (drakma:http-request
+          (concatenate 'string *api* route)
+          :accept "application/json"
+          :content-type "application/json"
+          :additional-headers `(("Authorization" . ,(make-auth-header token))))))
 
 (defun refresh-token ()
   (let* ((rtoken (sb-unix::posix-getenv "QB_REFRESH_TOKEN"))
@@ -41,16 +39,18 @@
            :accept "application/json"
            :content-type "application/x-www-form-urlencoded"
            :additional-headers `(("Authorization" . ,(make-basic-auth-header)))))))
-(defun get-profit-and-loss ()
-  (make-qb-request (concatenate 'string *company-id* "/reports/ProfitAndLoss?start_date=2019-09-01&end_date=2019-09-30&minorversion=12")))
+(defun get-profit-and-loss (date-macro token)
+  (make-qb-request (concatenate 'string *company-id* "/reports/ProfitAndLoss?date_macro=" date-macro "&minorversion=12") token))
 
-(defun request-as-json (request)
+(defun request-as-json (function &rest args)
   (with-input-from-string
-        (s (funcall request))
+        (s (apply function args))
           (json:decode-json s)))
 
 (defun start ()
   (let* ((token-request (request-as-json #'refresh-token))
+         (token (cdr (assoc :access--token token-request)))
+         (last-week (request-as-json #'get-profit-and-loss "Last%20Week" token)))
 ; First, we need to grab a token, so that we can make API requests to QuickBooks
-         (token (cdr (assoc :access--token token-request))))
+    (print last-week)
     (print token)))
